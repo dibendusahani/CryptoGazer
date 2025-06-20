@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import React, { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -10,17 +13,76 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Token } from "@/lib/types";
-import { Coins } from "lucide-react";
+import { Coins, AlertCircle } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const mockTokens: Token[] = [
-  { id: "bitcoin", name: "Bitcoin", symbol: "BTC", price: 60000, change24h: 2.5, marketCap: 1200000000000, iconUrl: "https://placehold.co/32x32.png" },
-  { id: "ethereum", name: "Ethereum", symbol: "ETH", price: 3000, change24h: -1.2, marketCap: 360000000000, iconUrl: "https://placehold.co/32x32.png" },
-  { id: "solana", name: "Solana", symbol: "SOL", price: 150, change24h: 5.7, marketCap: 70000000000, iconUrl: "https://placehold.co/32x32.png" },
-  { id: "dogecoin", name: "Dogecoin", symbol: "DOGE", price: 0.15, change24h: 10.1, marketCap: 20000000000, iconUrl: "https://placehold.co/32x32.png" },
-  { id: "cardano", name: "Cardano", symbol: "ADA", price: 0.45, change24h: 0.5, marketCap: 16000000000, iconUrl: "https://placehold.co/32x32.png" },
-];
+// Helper function to format large numbers
+const formatMarketCap = (value: number | string): string => {
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(num)) return "N/A";
+  if (num >= 1_000_000_000_000) {
+    return `$${(num / 1_000_000_000_000).toFixed(2)}T`;
+  }
+  if (num >= 1_000_000_000) {
+    return `$${(num / 1_000_000_000).toFixed(2)}B`;
+  }
+  if (num >= 1_000_000) {
+    return `$${(num / 1_000_000).toFixed(2)}M`;
+  }
+  return `$${num.toFixed(2)}`;
+};
+
 
 export function TokenTable() {
+  const [tokens, setTokens] = useState<Token[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchTokens = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch("https://api.coincap.io/v2/assets?limit=20");
+        if (!response.ok) {
+          throw new Error(`Failed to fetch tokens: ${response.statusText}`);
+        }
+        const data = await response.json();
+        const fetchedTokens: Token[] = data.data.map((token: any) => ({
+          ...token,
+          iconUrl: `https://assets.coincap.io/assets/icons/${token.symbol.toLowerCase()}@2x.png`
+        }));
+        setTokens(fetchedTokens);
+      } catch (err) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("An unknown error occurred");
+        }
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTokens();
+  }, []);
+
+  if (error) {
+    return (
+      <Card className="shadow-lg col-span-1 md:col-span-2 lg:col-span-3">
+        <CardHeader>
+          <CardTitle className="font-headline text-xl">Cryptocurrency Prices</CardTitle>
+        </CardHeader>
+        <CardContent className="h-[400px] flex flex-col items-center justify-center">
+          <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+          <p className="text-destructive font-semibold">Could not load token data.</p>
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </CardContent>
+      </Card>
+    );
+  }
+  
   return (
     <Card className="shadow-lg col-span-1 md:col-span-2 lg:col-span-3">
       <CardHeader>
@@ -40,24 +102,56 @@ export function TokenTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockTokens.map((token) => (
-                <TableRow key={token.id} className="hover:bg-muted/50 transition-colors duration-150">
-                  <TableCell>
-                    {token.iconUrl ? (
-                      <Image src={token.iconUrl} alt={token.name} width={24} height={24} className="rounded-full" data-ai-hint={`${token.name} logo`} />
-                    ) : (
-                      <Coins className="h-6 w-6 text-muted-foreground" />
-                    )}
-                  </TableCell>
-                  <TableCell className="font-medium">{token.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{token.symbol}</TableCell>
-                  <TableCell className="text-right">${token.price.toLocaleString()}</TableCell>
-                  <TableCell className={`text-right ${token.change24h >= 0 ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"}`}>
-                    {token.change24h >= 0 ? "+" : ""}{token.change24h.toFixed(1)}%
-                  </TableCell>
-                  <TableCell className="text-right hidden sm:table-cell">${token.marketCap.toLocaleString()}</TableCell>
+              {loading && Array.from({ length: 10 }).map((_, index) => (
+                <TableRow key={`skeleton-${index}`}>
+                  <TableCell><Skeleton className="h-6 w-6 rounded-full" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                  <TableCell className="text-right"><Skeleton className="h-4 w-20" /></TableCell>
+                  <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell className="text-right hidden sm:table-cell"><Skeleton className="h-4 w-28" /></TableCell>
                 </TableRow>
               ))}
+              {!loading && tokens.map((token) => {
+                const price = parseFloat(token.priceUsd);
+                const change24h = parseFloat(token.changePercent24Hr);
+                const marketCap = parseFloat(token.marketCapUsd);
+
+                return (
+                  <TableRow key={token.id} className="hover:bg-muted/50 transition-colors duration-150">
+                    <TableCell>
+                      {token.iconUrl ? (
+                        <Image 
+                          src={token.iconUrl} 
+                          alt={token.name} 
+                          width={24} 
+                          height={24} 
+                          className="rounded-full" 
+                          data-ai-hint={`${token.symbol.toLowerCase()} logo`}
+                          onError={(e) => {
+                            // Fallback to generic icon if specific one fails
+                            e.currentTarget.srcset = ""; // Prevent looping if placeholder also fails
+                            e.currentTarget.src = "/placeholder-icon.png"; // You'd need a generic placeholder in /public
+                          }}
+                        />
+                      ) : (
+                        <Coins className="h-6 w-6 text-muted-foreground" />
+                      )}
+                    </TableCell>
+                    <TableCell className="font-medium">{token.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{token.symbol}</TableCell>
+                    <TableCell className="text-right">
+                      {!isNaN(price) ? `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "N/A"}
+                    </TableCell>
+                    <TableCell className={`text-right ${!isNaN(change24h) && change24h >= 0 ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"}`}>
+                      {!isNaN(change24h) ? `${change24h >= 0 ? "+" : ""}${change24h.toFixed(2)}%` : "N/A"}
+                    </TableCell>
+                    <TableCell className="text-right hidden sm:table-cell">
+                      {!isNaN(marketCap) ? formatMarketCap(marketCap) : "N/A"}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </ScrollArea>

@@ -1,48 +1,113 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
-import { Header } from "@/components/dashboard/Header";
 import { PortfolioOverview } from "@/components/dashboard/PortfolioOverview";
 import { PortfolioPerformanceChart } from "@/components/dashboard/PortfolioPerformanceChart";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { TokenTable } from "@/components/dashboard/TokenTable";
-import { TrendingUp, Zap, Globe, Activity } from "lucide-react"; // Using Activity for Fear & Greed
+import { TrendingUp, Globe, Activity } from "lucide-react";
+import type { GlobalMarketResponse, FearAndGreedIndexResponse, GlobalMarketData, FearAndGreedIndexData } from "@/lib/types";
 
-// Mock data for Fear & Greed Index and Market Cap
-const mockFearAndGreed = {
-  value: 72,
-  classification: "Greed",
-};
-
-const mockMarketCap = {
-  value: 2.3, // In Trillions
-  change: "+1.5%",
+const formatCompactNumber = (value: number | undefined): string => {
+  if (value === undefined || isNaN(value)) return "Loading...";
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    notation: 'compact',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
 };
 
 export default function HomePage() {
+  const [globalMarketData, setGlobalMarketData] = useState<GlobalMarketData | null>(null);
+  const [fearAndGreed, setFearAndGreed] = useState<FearAndGreedIndexData | null>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [errorStats, setErrorStats] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      setLoadingStats(true);
+      setErrorStats(null);
+      try {
+        const [globalRes, fngRes] = await Promise.all([
+          fetch("https://api.alternative.me/v2/global/"),
+          fetch("https://api.alternative.me/fng/?limit=1")
+        ]);
+
+        if (!globalRes.ok) throw new Error(`Failed to fetch global market data: ${globalRes.statusText}`);
+        if (!fngRes.ok) throw new Error(`Failed to fetch Fear & Greed Index: ${fngRes.statusText}`);
+
+        const globalData: GlobalMarketResponse = await globalRes.json();
+        const fngData: FearAndGreedIndexResponse = await fngRes.json();
+
+        if (globalData.data) {
+          setGlobalMarketData(globalData.data);
+        } else {
+          throw new Error("No global data found in API response");
+        }
+        
+        if (fngData.data && fngData.data.length > 0) {
+          setFearAndGreed(fngData.data[0]);
+        } else {
+          throw new Error("No Fear & Greed data found in API response");
+        }
+
+      } catch (err) {
+        if (err instanceof Error) {
+          setErrorStats(err.message);
+        } else {
+          setErrorStats("An unknown error occurred while fetching stats.");
+        }
+        console.error(err);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  const marketCapChange = globalMarketData?.market_cap_change_percentage_24h_usd;
+  const marketCapChangeString = marketCapChange !== undefined 
+    ? `${marketCapChange >= 0 ? '+' : ''}${marketCapChange.toFixed(1)}%`
+    : "Loading...";
+  const marketCapChangeColor = marketCapChange !== undefined 
+    ? (marketCapChange >= 0 ? "hsl(var(--chart-1))" : "hsl(var(--destructive))")
+    : "hsl(var(--muted-foreground))";
+
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {errorStats && (
+          <div className="p-4 bg-destructive/10 text-destructive border border-destructive rounded-md">
+            <p className="font-semibold">Error loading dashboard statistics:</p>
+            <p className="text-sm">{errorStats}</p>
+          </div>
+        )}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <StatCard
             title="Global Market Cap"
-            value={`$${mockMarketCap.value}T`}
+            value={loadingStats ? "Loading..." : formatCompactNumber(globalMarketData?.total_market_cap.usd)}
             icon={Globe}
             description="Total value of all cryptocurrencies."
-            change={mockMarketCap.change}
-            changeColor={mockMarketCap.change.startsWith('+') ? "hsl(var(--chart-1))" : "hsl(var(--destructive))"}
+            change={loadingStats ? "" : marketCapChangeString}
+            changeColor={loadingStats ? "hsl(var(--muted-foreground))" : marketCapChangeColor}
           />
           <StatCard
             title="Fear & Greed Index"
-            value={mockFearAndGreed.value}
-            icon={Activity} // Using Activity as a proxy for sentiment
-            description={mockFearAndGreed.classification}
+            value={loadingStats ? "Loading..." : (fearAndGreed?.value || "N/A")}
+            icon={Activity} 
+            description={loadingStats ? "Loading..." : (fearAndGreed?.value_classification || "N/A")}
           />
            <StatCard
             title="24h Volume"
-            value="$120B"
+            value={loadingStats ? "Loading..." : formatCompactNumber(globalMarketData?.total_volume_24h.usd)}
             icon={TrendingUp}
             description="Total crypto volume traded in 24h."
-            change="+5.2%"
-            changeColor={"hsl(var(--chart-1))"}
+            // No direct 24h volume change % from this specific global endpoint, so we omit it or find another source
           />
         </div>
 

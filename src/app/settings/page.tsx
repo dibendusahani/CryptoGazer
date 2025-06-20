@@ -64,16 +64,11 @@ export default function SettingsPage() {
                 <Switch id="push-notifications" />
               </div>
             </div>
-             <div className="space-y-4">
-                <h3 className="text-lg font-medium font-headline">API Keys</h3>
-                <div className="space-y-2">
-                    <Label htmlFor="coingecko-api">CoinGecko API Key</Label>
-                    <Input id="coingecko-api" type="password" placeholder="Enter your CoinGecko API Key" />
-                     <p className="text-xs text-muted-foreground">
-                        Used for fetching cryptocurrency data. Get yours from <a href="https://www.coingecko.com/en/api" target="_blank" rel="noopener noreferrer" className="underline">CoinGecko</a>.
-                    </p>
-                </div>
-                 <Button variant="secondary">Save API Key</Button>
+            <div className="space-y-4">
+                <h3 className="text-lg font-medium font-headline">API Configuration</h3>
+                 <p className="text-sm text-muted-foreground">
+                    This app uses public APIs from CoinCap and Alternative.me, which do not require an API key.
+                </p>
             </div>
           </CardContent>
         </Card>
