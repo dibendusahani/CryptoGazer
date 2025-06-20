@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from "next/image";
@@ -45,7 +46,17 @@ export function TokenTable() {
       try {
         const response = await fetch("https://api.coincap.io/v2/assets?limit=20");
         if (!response.ok) {
-          throw new Error(`Failed to fetch tokens: ${response.statusText}`);
+          // Try to get more details from the response if possible
+          let errorText = response.statusText;
+          try {
+            const errorData = await response.json();
+            if (errorData && errorData.error) {
+              errorText = errorData.error;
+            }
+          } catch (e) {
+            // Ignore if response body is not JSON or empty
+          }
+          throw new Error(`Failed to fetch tokens: ${response.status} ${errorText}`);
         }
         const data = await response.json();
         const fetchedTokens: Token[] = data.data.map((token: any) => ({
@@ -54,12 +65,14 @@ export function TokenTable() {
         }));
         setTokens(fetchedTokens);
       } catch (err) {
+        let message = "An unknown error occurred while fetching token data.";
         if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError("An unknown error occurred");
+          message = err.message;
+        } else if (typeof err === 'string') {
+          message = err;
         }
-        console.error(err);
+        setError(message);
+        console.error("TokenTable fetch error details:", err);
       } finally {
         setLoading(false);
       }
@@ -130,8 +143,10 @@ export function TokenTable() {
                           data-ai-hint={`${token.symbol.toLowerCase()} logo`}
                           onError={(e) => {
                             // Fallback to generic icon if specific one fails
-                            e.currentTarget.srcset = ""; // Prevent looping if placeholder also fails
-                            e.currentTarget.src = "/placeholder-icon.png"; // You'd need a generic placeholder in /public
+                             const target = e.target as HTMLImageElement;
+                             target.onerror = null; // Prevent looping
+                             target.src = "https://placehold.co/24x24.png"; 
+                             target.dataset.aiHint = "placeholder icon";
                           }}
                         />
                       ) : (
