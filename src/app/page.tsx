@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -36,8 +37,26 @@ export default function HomePage() {
           fetch("https://api.alternative.me/fng/?limit=1")
         ]);
 
-        if (!globalRes.ok) throw new Error(`Failed to fetch global market data: ${globalRes.statusText}`);
-        if (!fngRes.ok) throw new Error(`Failed to fetch Fear & Greed Index: ${fngRes.statusText}`);
+        if (!globalRes.ok) {
+          let errorText = globalRes.statusText;
+          try {
+            const errorData = await globalRes.json();
+            if (errorData && (errorData.error || errorData.message)) {
+              errorText = errorData.error || errorData.message;
+            }
+          } catch (e) { /* Ignore if response body is not JSON or empty */ }
+          throw new Error(`Failed to fetch global market data: ${globalRes.status} ${errorText}`);
+        }
+        if (!fngRes.ok) {
+          let errorText = fngRes.statusText;
+          try {
+            const errorData = await fngRes.json();
+            if (errorData && (errorData.error || errorData.message)) {
+              errorText = errorData.error || errorData.message;
+            }
+          } catch (e) { /* Ignore if response body is not JSON or empty */ }
+          throw new Error(`Failed to fetch Fear & Greed Index: ${fngRes.status} ${errorText}`);
+        }
 
         const globalData: GlobalMarketResponse = await globalRes.json();
         const fngData: FearAndGreedIndexResponse = await fngRes.json();
@@ -55,12 +74,14 @@ export default function HomePage() {
         }
 
       } catch (err) {
+        let message = "An unknown error occurred while fetching dashboard statistics.";
         if (err instanceof Error) {
-          setErrorStats(err.message);
-        } else {
-          setErrorStats("An unknown error occurred while fetching stats.");
+          message = err.message;
+        } else if (typeof err === 'string') {
+          message = err;
         }
-        console.error(err);
+        setErrorStats(message);
+        console.error("HomePage fetchStats error details:", err);
       } finally {
         setLoadingStats(false);
       }
