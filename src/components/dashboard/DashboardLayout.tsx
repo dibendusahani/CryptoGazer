@@ -1,3 +1,4 @@
+
 "use client"
 
 import React from "react";
@@ -32,8 +33,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { href: "/", label: "Dashboard", icon: Home },
-    { 
-      label: "Portfolio", 
+    {
+      label: "Portfolio",
       icon: Briefcase,
       onClick: () => setPortfolioOpen(!portfolioOpen),
       isOpen: portfolioOpen,
@@ -70,8 +71,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <SidebarMenuItem key={item.label}>
                 {item.subItems ? (
                   <>
-                    <SidebarMenuButton 
-                      onClick={item.onClick} 
+                    <SidebarMenuButton
+                      onClick={item.onClick}
                       isActive={item.subItems.some(sub => pathname === sub.href)}
                       tooltip={item.label}
                     >
@@ -83,9 +84,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                        <SidebarMenuSub>
                         {item.subItems.map((subItem) => (
                            <SidebarMenuSubItem key={subItem.href}>
-                            <Link href={subItem.href} passHref legacyBehavior>
-                              <SidebarMenuSubButton asChild isActive={pathname === subItem.href}>
-                                <a>{subItem.label}</a>
+                            <Link href={subItem.href}>
+                              <SidebarMenuSubButton isActive={pathname === subItem.href}>
+                                {subItem.label}
                               </SidebarMenuSubButton>
                             </Link>
                           </SidebarMenuSubItem>
@@ -94,12 +95,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     )}
                   </>
                 ) : (
-                  <Link href={item.href || "#"} passHref legacyBehavior>
-                    <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.label}>
-                      <a>
+                  <Link href={item.href || "#"}>
+                    <SidebarMenuButton isActive={pathname === item.href} tooltip={item.label}>
                         <item.icon />
                         <span>{item.label}</span>
-                      </a>
                     </SidebarMenuButton>
                   </Link>
                 )}
