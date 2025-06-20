@@ -67,8 +67,15 @@ export default function SettingsPage() {
             <div className="space-y-4">
                 <h3 className="text-lg font-medium font-headline">API Configuration</h3>
                  <p className="text-sm text-muted-foreground">
-                    This app uses public APIs from CoinCap and Alternative.me, which do not require an API key.
+                    This app uses a CoinCap.io API key for cryptocurrency data. The API for Fear & Greed Index (Alternative.me) is public and does not require a key.
                 </p>
+                 <div className="space-y-2">
+                    <Label htmlFor="coincap-api-key">CoinCap API Key</Label>
+                    <Input id="coincap-api-key" value="357c8a99...c9a98e" disabled />
+                    <p className="text-xs text-muted-foreground">
+                        This key is currently hardcoded. In a production app, manage API keys securely.
+                    </p>
+                </div>
             </div>
           </CardContent>
         </Card>

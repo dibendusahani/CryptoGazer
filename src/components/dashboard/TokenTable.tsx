@@ -33,6 +33,7 @@ const formatMarketCap = (value: number | string): string => {
   return `$${num.toFixed(2)}`;
 };
 
+const COINCAP_API_KEY = "357c8a999b5262f845924985cc5c50408d6f0413ab6e3dadbb5cd32118c9a98e";
 
 export function TokenTable() {
   const [tokens, setTokens] = useState<Token[]>([]);
@@ -44,14 +45,18 @@ export function TokenTable() {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch("https://api.coincap.io/v2/assets?limit=20");
+        const response = await fetch("https://api.coincap.io/v2/assets?limit=20", {
+          headers: {
+            'Authorization': `Bearer ${COINCAP_API_KEY}`
+          }
+        });
+        
         if (!response.ok) {
-          // Try to get more details from the response if possible
           let errorText = response.statusText;
           try {
             const errorData = await response.json();
-            if (errorData && errorData.error) {
-              errorText = errorData.error;
+            if (errorData && (errorData.error || errorData.message)) {
+              errorText = errorData.error || errorData.message;
             }
           } catch (e) {
             // Ignore if response body is not JSON or empty
@@ -59,11 +64,15 @@ export function TokenTable() {
           throw new Error(`Failed to fetch tokens: ${response.status} ${errorText}`);
         }
         const data = await response.json();
-        const fetchedTokens: Token[] = data.data.map((token: any) => ({
-          ...token,
-          iconUrl: `https://assets.coincap.io/assets/icons/${token.symbol.toLowerCase()}@2x.png`
-        }));
-        setTokens(fetchedTokens);
+        if (data && data.data) {
+          const fetchedTokens: Token[] = data.data.map((token: any) => ({
+            ...token,
+            iconUrl: `https://assets.coincap.io/assets/icons/${token.symbol.toLowerCase()}@2x.png`
+          }));
+          setTokens(fetchedTokens);
+        } else {
+          throw new Error("No token data found in API response");
+        }
       } catch (err) {
         let message = "An unknown error occurred while fetching token data.";
         if (err instanceof Error) {
@@ -142,9 +151,8 @@ export function TokenTable() {
                           className="rounded-full" 
                           data-ai-hint={`${token.symbol.toLowerCase()} logo`}
                           onError={(e) => {
-                            // Fallback to generic icon if specific one fails
                              const target = e.target as HTMLImageElement;
-                             target.onerror = null; // Prevent looping
+                             target.onerror = null; 
                              target.src = "https://placehold.co/24x24.png"; 
                              target.dataset.aiHint = "placeholder icon";
                           }}
