@@ -85,7 +85,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                         {item.subItems.map((subItem) => (
                            <SidebarMenuSubItem key={subItem.href}>
                             <Link href={subItem.href}>
-                              <SidebarMenuSubButton isActive={pathname === subItem.href}>
+                              <SidebarMenuSubButton asChild isActive={pathname === subItem.href}>
                                 {subItem.label}
                               </SidebarMenuSubButton>
                             </Link>
