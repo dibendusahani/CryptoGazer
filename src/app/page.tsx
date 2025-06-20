@@ -38,24 +38,28 @@ export default function HomePage() {
         ]);
 
         if (!globalRes.ok) {
-          let errorText = globalRes.statusText;
+          let errorText = `Alternative.me Global API: ${globalRes.status}`;
           try {
             const errorData = await globalRes.json();
             if (errorData && (errorData.error || errorData.message)) {
-              errorText = errorData.error || errorData.message;
+              errorText += ` - ${errorData.error || errorData.message}`;
+            } else {
+              errorText += ` - ${globalRes.statusText}`;
             }
-          } catch (e) { /* Ignore if response body is not JSON or empty */ }
-          throw new Error(`Failed to fetch global market data: ${globalRes.status} ${errorText}`);
+          } catch (e) { errorText += ` - ${globalRes.statusText}`; }
+          throw new Error(errorText);
         }
         if (!fngRes.ok) {
-          let errorText = fngRes.statusText;
+          let errorText = `Alternative.me F&G API: ${fngRes.status}`;
           try {
             const errorData = await fngRes.json();
             if (errorData && (errorData.error || errorData.message)) {
-              errorText = errorData.error || errorData.message;
+              errorText += ` - ${errorData.error || errorData.message}`;
+            } else {
+              errorText += ` - ${fngRes.statusText}`;
             }
-          } catch (e) { /* Ignore if response body is not JSON or empty */ }
-          throw new Error(`Failed to fetch Fear & Greed Index: ${fngRes.status} ${errorText}`);
+          } catch (e) { errorText += ` - ${fngRes.statusText}`; }
+          throw new Error(errorText);
         }
 
         const globalData: GlobalMarketResponse = await globalRes.json();
@@ -64,19 +68,23 @@ export default function HomePage() {
         if (globalData.data) {
           setGlobalMarketData(globalData.data);
         } else {
-          throw new Error("No global data found in API response");
+          throw new Error("No global data found in Alternative.me API response");
         }
         
         if (fngData.data && fngData.data.length > 0) {
           setFearAndGreed(fngData.data[0]);
         } else {
-          throw new Error("No Fear & Greed data found in API response");
+          throw new Error("No Fear & Greed data found in Alternative.me API response");
         }
 
       } catch (err) {
         let message = "An unknown error occurred while fetching dashboard statistics.";
         if (err instanceof Error) {
-          message = err.message;
+          if (err.message.toLowerCase().includes("failed to fetch")) {
+            message = "Failed to connect to statistics services (api.alternative.me). Please check your internet connection or the API's status. This API does not require a key.";
+          } else {
+            message = err.message;
+          }
         } else if (typeof err === 'string') {
           message = err;
         }
@@ -128,7 +136,6 @@ export default function HomePage() {
             value={loadingStats ? "Loading..." : formatCompactNumber(globalMarketData?.total_volume_24h.usd)}
             icon={TrendingUp}
             description="Total crypto volume traded in 24h."
-            // No direct 24h volume change % from this specific global endpoint, so we omit it or find another source
           />
         </div>
 

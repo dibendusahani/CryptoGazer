@@ -52,16 +52,18 @@ export function TokenTable() {
         });
         
         if (!response.ok) {
-          let errorText = response.statusText;
+          let errorText = `CoinCap API: ${response.status}`;
           try {
             const errorData = await response.json();
             if (errorData && (errorData.error || errorData.message)) {
-              errorText = errorData.error || errorData.message;
+               errorText += ` - ${errorData.error || errorData.message}`;
+            } else {
+              errorText += ` - ${response.statusText}`;
             }
           } catch (e) {
-            // Ignore if response body is not JSON or empty
+             errorText += ` - ${response.statusText}`;
           }
-          throw new Error(`Failed to fetch tokens: ${response.status} ${errorText}`);
+          throw new Error(errorText);
         }
         const data = await response.json();
         if (data && data.data) {
@@ -71,12 +73,16 @@ export function TokenTable() {
           }));
           setTokens(fetchedTokens);
         } else {
-          throw new Error("No token data found in API response");
+          throw new Error("No token data found in CoinCap API response");
         }
       } catch (err) {
         let message = "An unknown error occurred while fetching token data.";
         if (err instanceof Error) {
-          message = err.message;
+          if (err.message.toLowerCase().includes("failed to fetch")) {
+            message = "Failed to connect to CoinCap API. Please check your internet connection or the API's status. The API key is being used as per documentation.";
+          } else {
+            message = err.message;
+          }
         } else if (typeof err === 'string') {
           message = err;
         }
