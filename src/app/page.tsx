@@ -7,6 +7,7 @@ import { PortfolioOverview } from "@/components/dashboard/PortfolioOverview";
 import { PortfolioPerformanceChart } from "@/components/dashboard/PortfolioPerformanceChart";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { TokenTable } from "@/components/dashboard/TokenTable";
+import EnhancedHomePage from "@/components/dashboard/EnhancedHomePage";
 import { TrendingUp, Globe, Activity } from "lucide-react";
 import type { GlobalMarketResponse, FearAndGreedIndexResponse, GlobalMarketData, FearAndGreedIndexData } from "@/lib/types";
 
@@ -43,7 +44,9 @@ export default function HomePage() {
           let errorText = `Alternative.me Global API: ${globalRes.status}`;
           try {
             const errorData = await globalRes.json();
-            if (errorData && (errorData.error || errorData.message)) {
+            if (errorData && errorData.metadata && errorData.metadata.error) {
+              errorText += ` - ${errorData.metadata.error}`;
+            } else if (errorData && (errorData.error || errorData.message)) {
               errorText += ` - ${errorData.error || errorData.message}`;
             } else {
               errorText += ` - ${globalRes.statusText}`;
@@ -55,7 +58,9 @@ export default function HomePage() {
           let errorText = `Alternative.me F&G API: ${fngRes.status}`;
           try {
             const errorData = await fngRes.json();
-            if (errorData && (errorData.error || errorData.message)) {
+            if (errorData && errorData.metadata && errorData.metadata.error) {
+              errorText += ` - ${errorData.metadata.error}`;
+            } else if (errorData && (errorData.error || errorData.message)) {
               errorText += ` - ${errorData.error || errorData.message}`;
             } else {
               errorText += ` - ${fngRes.statusText}`;
@@ -64,13 +69,26 @@ export default function HomePage() {
           throw new Error(errorText);
         }
 
-        const globalData: GlobalMarketResponse = await globalRes.json();
+        const globalData: any = await globalRes.json();
         const fngData: FearAndGreedIndexResponse = await fngRes.json();
         console.log("[Alternative.me] Global API data:", globalData);
         console.log("[Alternative.me] F&G API data:", fngData);
 
         if (globalData.data) {
-          setGlobalMarketData(globalData.data);
+          // Transform the new API structure to match expected format
+          const transformedGlobalData: GlobalMarketData = {
+            active_cryptocurrencies: globalData.data.active_cryptocurrencies || 0,
+            upcoming_icos: 0, // Not provided in new API
+            ongoing_icos: 0, // Not provided in new API
+            ended_icos: 0, // Not provided in new API
+            markets: globalData.data.active_markets || 0,
+            total_market_cap: globalData.data.quotes?.USD ? { usd: globalData.data.quotes.USD.total_market_cap } : {},
+            total_volume_24h: globalData.data.quotes?.USD ? { usd: globalData.data.quotes.USD.total_volume_24h } : {},
+            market_cap_percentage: { btc: globalData.data.bitcoin_percentage_of_market_cap * 100 || 0 },
+            market_cap_change_percentage_24h_usd: 0, // Not provided in new API
+            updated_at: globalData.data.last_updated || 0
+          };
+          setGlobalMarketData(transformedGlobalData);
         } else {
           throw new Error("No global data found in Alternative.me API response");
         }
@@ -114,6 +132,10 @@ export default function HomePage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* Enhanced Home Page */}
+        <EnhancedHomePage />
+        
+        {/* API Status and Statistics */}
         {errorStats && (
           <div className="p-4 bg-destructive/10 text-destructive border border-destructive rounded-md">
             <p className="font-semibold">Error loading dashboard statistics:</p>

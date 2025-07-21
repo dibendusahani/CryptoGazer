@@ -58,9 +58,24 @@ export interface GlobalMarketData {
 
 export interface GlobalMarketResponse {
     data: GlobalMarketData;
-    metadata: {
-        timestamp: number;
-        num_cryptocurrencies: number;
-        error: string | null;
+}
+
+// Raw API response from alternative.me/v2/global/ (new structure)
+export interface AlternativeMeGlobalResponse {
+  data: {
+    active_cryptocurrencies: number;
+    active_markets: number;
+    bitcoin_percentage_of_market_cap: number;
+    quotes: {
+      USD: {
+        total_market_cap: number;
+        total_volume_24h: number;
+      }
     };
+    last_updated: number;
+  };
+  metadata: {
+    timestamp: number;
+    error: string | null;
+  };
 }
