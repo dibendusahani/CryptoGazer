@@ -36,6 +36,8 @@ export default function HomePage() {
           fetch("https://api.alternative.me/v2/global/"),
           fetch("https://api.alternative.me/fng/?limit=1")
         ]);
+        console.log("[Alternative.me] Global API response status:", globalRes.status);
+        console.log("[Alternative.me] F&G API response status:", fngRes.status);
 
         if (!globalRes.ok) {
           let errorText = `Alternative.me Global API: ${globalRes.status}`;
@@ -64,6 +66,8 @@ export default function HomePage() {
 
         const globalData: GlobalMarketResponse = await globalRes.json();
         const fngData: FearAndGreedIndexResponse = await fngRes.json();
+        console.log("[Alternative.me] Global API data:", globalData);
+        console.log("[Alternative.me] F&G API data:", fngData);
 
         if (globalData.data) {
           setGlobalMarketData(globalData.data);
