@@ -21,7 +21,22 @@ import {
 } from "@/components/ui/sidebar";
 import { Header } from "./Header";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LayoutDashboard, Wallet, BarChart3, Settings, LogOut, ChevronDown, ChevronUp, Home, Briefcase, TrendingUp as TrendingUpIcon } from "lucide-react";
+import { 
+  LayoutDashboard, 
+  Wallet, 
+  BarChart3, 
+  Settings, 
+  LogOut, 
+  ChevronDown, 
+  ChevronUp, 
+  Home, 
+  Briefcase, 
+  TrendingUp as TrendingUpIcon,
+  ArrowLeftRight,
+  Zap,
+  PieChart,
+  Activity
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "../ui/button";
@@ -30,6 +45,7 @@ import { Button } from "../ui/button";
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [portfolioOpen, setPortfolioOpen] = React.useState(false);
+  const [analyticsOpen, setAnalyticsOpen] = React.useState(false);
 
   const navItems = [
     { href: "/", label: "Dashboard", icon: Home },
@@ -41,9 +57,21 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       subItems: [
         { href: "/portfolio/overview", label: "Overview" },
         { href: "/portfolio/add-transaction", label: "Add Transaction" },
+        { href: "/advanced-portfolio", label: "Advanced Portfolio" },
       ]
     },
     { href: "/markets", label: "Markets", icon: TrendingUpIcon },
+    {
+      label: "Analytics",
+      icon: BarChart3,
+      onClick: () => setAnalyticsOpen(!analyticsOpen),
+      isOpen: analyticsOpen,
+      subItems: [
+        { href: "/dex-analytics", label: "DEX Analytics" },
+        { href: "/token-comparison", label: "Token Comparison" },
+      ]
+    },
+    { href: "/gas-tracker", label: "Gas Tracker", icon: Zap },
     { href: "/settings", label: "Settings", icon: Settings },
   ];
 

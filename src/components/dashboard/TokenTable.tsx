@@ -45,10 +45,10 @@ export function TokenTable() {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch("https://api.coincap.io/v2/assets?limit=20", {
-          headers: {
-            'Authorization': `Bearer ${COINCAP_API_KEY}`
-          }
+        const response = await fetch(`https://rest.coincap.io/v3/assets?limit=20`, {
+            headers: {
+                'Authorization': `Bearer ${COINCAP_API_KEY}`
+            }
         });
         
         if (!response.ok) {
@@ -66,9 +66,14 @@ export function TokenTable() {
           throw new Error(errorText);
         }
         const data = await response.json();
+        console.log("CoinCap API response data:", data); // Added for debugging
         if (data && data.data) {
           const fetchedTokens: Token[] = data.data.map((token: any) => ({
             ...token,
+            // Correctly map the fields from the API response
+            priceUsd: token.priceUsd,
+            marketCapUsd: token.marketCapUsd,
+            changePercent24Hr: token.changePercent24Hr,
             iconUrl: `https://assets.coincap.io/assets/icons/${token.symbol.toLowerCase()}@2x.png`
           }));
           setTokens(fetchedTokens);
@@ -79,7 +84,7 @@ export function TokenTable() {
         let message = "An unknown error occurred while fetching token data.";
         if (err instanceof Error) {
           if (err.message.toLowerCase().includes("failed to fetch")) {
-            message = "Failed to connect to CoinCap API. Please check your internet connection or the API's status. The API key is being used as per documentation.";
+            message = "Failed to connect to CoinCap API. Please check your internet connection or the API's status. The API key usage appears correct.";
           } else {
             message = err.message;
           }
